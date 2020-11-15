@@ -2,11 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="98380c10-cda3-406f-8af3-312e7d9357c9" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/fixtures_test/custom.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/fixtures_test/custom.zap.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/fixtures_test/primitives.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/fixtures_test/primitives.zap.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/generator_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.github/workflows/ci.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,6 +53,9 @@
     <property name="settings.editor.selected.configurable" value="preferences.keymap" />
   </component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/fixtures_test" />
     </key>

@@ -1,40 +1,40 @@
 package fixtures_test
 
 type Dep1 struct {
-	Str string `json:"str"`
+	Str string
 }
 type Dep2 struct {
-	Str string `json:"str"`
+	Str string
 }
 type Dep3 struct {
-	Str string `json:"str"`
+	Str string
 }
 type Dep4 struct {
-	Str string `json:"str"`
+	Str string
 }
 type Dep5 struct {
-	Str string `json:"str"`
+	Str string
 }
 type Dep6 struct {
-	Dep5 Dep5 `json:"dep_5"`
+	Dep5 Dep5
 }
 
 type Dep struct {
-	Int        int             `json:"int"`
-	Dep1       Dep1            `json:"dep1"`
-	Dep2Opt    *Dep2           `json:"dep2_opt,omitempty"`
-	Dep3Array  []Dep3          `json:"dep3_array,omitempty"`
-	Dep4Map    map[string]Dep4 `json:"dep4_map,omitempty"`
-	DepWithDep Dep6            `json:"dep_with_dep"`
+	Int        int
+	Dep1       Dep1
+	Dep2Opt    *Dep2
+	Dep3Array  []Dep3
+	Dep4Map    map[string]Dep4
+	DepWithDep Dep6
 }
 
 type Optional struct {
-	Int int `json:"int"`
+	Int int
 }
 
 const minorVersionStructV1 = "1"
 
 type StructV1 struct {
-	Dep      Dep       `json:"dep"`
-	Optional *Optional `json:"optional"`
+	Dep      Dep
+	Optional *Optional
 }

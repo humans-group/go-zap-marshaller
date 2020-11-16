@@ -54,7 +54,12 @@ func (g *Generator) Generate(sources map[string]astparser.ParsedFile) map[string
 			}
 
 			for _, fieldDef := range structDef.Fields {
-				writeDef(fileContent, fieldDef.FieldType, fieldDef.FieldName)
+				name := fieldDef.FieldName
+				if fieldDef.JsonName != "" {
+					name = fieldDef.JsonName
+				}
+
+				writeDef(fileContent, fieldDef.FieldType, name)
 			}
 
 			fileContent.WriteString("return nil\n")

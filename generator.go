@@ -154,7 +154,7 @@ func writePointerDef(fileContent *bytes.Buffer, fieldName, keyName string, metho
 	case encMethodAdd:
 		fileContent.WriteString(fmt.Sprintf("if %s != nil {\n", fieldName))
 	case encMethodAppend:
-		fileContent.WriteString(fmt.Sprintf(`if m.%s == nil {
+		fileContent.WriteString(fmt.Sprintf(`if %s == nil {
 				continue
 			}
 		`, fieldName))

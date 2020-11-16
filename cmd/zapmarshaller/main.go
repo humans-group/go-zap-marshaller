@@ -9,7 +9,7 @@ import (
 
 	"github.com/mkorolyov/astparser"
 
-	zapmarshaller "github.com/humans-net/go-zap-marshaller"
+	zapmarshaller "github.com/humans-group/go-zap-marshaller"
 )
 
 var (

@@ -22,8 +22,7 @@ var _ = Describe("backoff", func() {
 	It("should generate golden files", func() {
 		cfg := astparser.Config{
 			InputDir:      "fixtures_test",
-			//IncludeRegexp: "primitives.go|custom.go",
-			IncludeRegexp: "auth.go",
+			IncludeRegexp: "primitives.go|custom.go",
 		}
 		sources, err := astparser.Load(cfg)
 		Ω(err).ShouldNot(HaveOccurred())
@@ -31,11 +30,10 @@ var _ = Describe("backoff", func() {
 		generator := Generator{Cfg: Config{}}
 		files := generator.Generate(sources)
 		for name, got := range files {
-			Ω(ioutil.WriteFile(
-				fmt.Sprintf("fixtures_test/%s.zap.go", strings.Split(name, ".")[0]),
-				got, 0666)).Should(Succeed())
-			//Ω(err).ShouldNot(HaveOccurred())
-			//Ω(string(want)).Should(BeEquivalentTo(string(got)))
+			want, err := ioutil.ReadFile(
+				fmt.Sprintf("fixtures_test/%s.zap.go", strings.Split(name, ".")[0]))
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(string(want)).Should(BeEquivalentTo(string(got)))
 		}
 	})
 })

@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-  <testsuite name="ZapGenerator" tests="1" failures="0" errors="0" time="0.016">
-      <testcase name="backoff should generate golden files" classname="ZapGenerator" time="0.015984413"></testcase>
-  </testsuite>

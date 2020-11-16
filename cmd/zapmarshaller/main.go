@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/mkorolyov/astparser"
 
@@ -43,7 +45,7 @@ func main() {
 		zapFiles := generator.Generate(sources)
 		// save
 		for f, body := range zapFiles {
-			filePath := *outputDir + "/" + f + ".zap.go"
+			filePath := *outputDir + "/" + strings.TrimSuffix(f, filepath.Ext(f)) + ".zap.go"
 
 			if err := ioutil.WriteFile(filePath, body, 0600); err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "failed to save generated zap marshaller file %s: %v\n", filePath, err)

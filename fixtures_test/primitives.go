@@ -21,4 +21,5 @@ type Primitives struct {
 	Slice        []int
 	MapWithNulls map[string]*string
 	Ptr          *int
+	Secured      string `secured:"true"`
 }

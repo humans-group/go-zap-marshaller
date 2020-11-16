@@ -59,7 +59,7 @@ func (g *Generator) Generate(sources map[string]astparser.ParsedFile) map[string
 					zapFieldName = fieldDef.JsonName
 				}
 
-				writeDef(fileContent, fieldDef.FieldType, fieldDef.FieldName, zapFieldName)
+				writeDef(fileContent, fieldDef, zapFieldName)
 			}
 
 			fileContent.WriteString("return nil\n")
@@ -77,26 +77,44 @@ func (g *Generator) Generate(sources map[string]astparser.ParsedFile) map[string
 	return result
 }
 
-func writeDef(fileContent *bytes.Buffer, fieldType astparser.Type, fieldName, zapFieldName string) {
+func writeDef(fileContent *bytes.Buffer, fieldDef astparser.FieldDef, zapFieldName string) {
 	fileContent.WriteString(fmt.Sprintf("\nkeyName = \"%s\"\n", zapFieldName))
 
-	switch t := fieldType.(type) {
+	secured := secured(fieldDef.AllTags)
+
+	switch t := fieldDef.FieldType.(type) {
 	case astparser.TypeArray:
-		writeArrayDef(fileContent, fieldName, t)
+		writeArrayDef(fileContent, fieldDef.FieldName, t, secured)
 	case astparser.TypeMap:
-		writeMapDef(fileContent, fieldName, t)
+		writeMapDef(fileContent, fieldDef.FieldName, t, secured)
 	case astparser.TypePointer:
-		writePointerDef(fileContent, fmt.Sprintf("m.%s", fieldName), "keyName", encMethodAdd, t)
+		writePointerDef(fileContent, fmt.Sprintf("m.%s", fieldDef.FieldName), "keyName", encMethodAdd, t, secured)
 	case astparser.TypeCustom:
-		writeCustomDef(fileContent, encMethodAdd, fmt.Sprintf("m.%s", fieldName), "keyName")
+		writeCustomDef(fileContent, encMethodAdd, fmt.Sprintf("m.%s", fieldDef.FieldName), "keyName", secured)
 	case astparser.TypeSimple:
-		writeSimpleDef(fileContent, t, encMethodAdd, fmt.Sprintf("m.%s", fieldName), "keyName")
+		writeSimpleDef(fileContent, t, encMethodAdd, fmt.Sprintf("m.%s", fieldDef.FieldName), "keyName", secured)
 	default:
-		panic(fmt.Sprintf("unknown field name %s type %T", fieldName, t))
+		panic(fmt.Sprintf("unknown field name %s type %T", fieldDef.FieldName, t))
 	}
 }
 
-func writeMapDef(fileContent *bytes.Buffer, fieldName string, t astparser.TypeMap) {
+const securedTagName = "secured"
+
+func secured(tags map[string]string) bool {
+	for k, _ := range tags {
+		if k == securedTagName {
+			return true
+		}
+	}
+	return false
+}
+
+func writeMapDef(fileContent *bytes.Buffer, fieldName string, t astparser.TypeMap, secured bool) {
+	if secured {
+		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+		return
+	}
+
 	fileContent.WriteString(fmt.Sprintf(
 		`_ = enc.AddObject(keyName, zapcore.ObjectMarshalerFunc(func(enc zapcore.ObjectEncoder) error {
 		for key, value := range m.%s {
@@ -104,12 +122,12 @@ func writeMapDef(fileContent *bytes.Buffer, fieldName string, t astparser.TypeMa
 
 	switch tt := t.ValueType.(type) {
 	case astparser.TypeCustom:
-		writeCustomDef(fileContent, encMethodAdd, "value", "key")
+		writeCustomDef(fileContent, encMethodAdd, "value", "key", secured)
 	case astparser.TypePointer:
-		writePointerDef(fileContent, "value", "key", encMethodAdd, tt)
+		writePointerDef(fileContent, "value", "key", encMethodAdd, tt, secured)
 
 	case astparser.TypeSimple:
-		writeSimpleDef(fileContent, tt, encMethodAdd, "value", "key")
+		writeSimpleDef(fileContent, tt, encMethodAdd, "value", "key", secured)
 
 	default:
 		panic(fmt.Sprintf("unsupported array inner type %T in field %s", tt, fieldName))
@@ -120,7 +138,12 @@ func writeMapDef(fileContent *bytes.Buffer, fieldName string, t astparser.TypeMa
 	fileContent.WriteString("}))\n\n")
 }
 
-func writeArrayDef(fileContent *bytes.Buffer, fieldName string, t astparser.TypeArray) {
+func writeArrayDef(fileContent *bytes.Buffer, fieldName string, t astparser.TypeArray, secured bool) {
+	if secured {
+		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+		return
+	}
+
 	if s, ok := t.InnerType.(astparser.TypeSimple); ok && s.Name == "byte" {
 		fileContent.WriteString(fmt.Sprintf("enc.AddByteString(keyName, m.%s)\n", fieldName))
 		return
@@ -133,12 +156,12 @@ func writeArrayDef(fileContent *bytes.Buffer, fieldName string, t astparser.Type
 
 	switch tt := t.InnerType.(type) {
 	case astparser.TypeCustom:
-		writeCustomDef(fileContent, encMethodAppend, "value", "keyName")
+		writeCustomDef(fileContent, encMethodAppend, "value", "keyName", secured)
 	case astparser.TypePointer:
-		writePointerDef(fileContent, "value", "key", encMethodAppend, tt)
+		writePointerDef(fileContent, "value", "key", encMethodAppend, tt, secured)
 
 	case astparser.TypeSimple:
-		writeSimpleDef(fileContent, tt, encMethodAppend, "value", "keyName")
+		writeSimpleDef(fileContent, tt, encMethodAppend, "value", "keyName", secured)
 
 	default:
 		panic(fmt.Sprintf("unsupported array inner type %T in field %s", tt, fieldName))
@@ -149,7 +172,12 @@ func writeArrayDef(fileContent *bytes.Buffer, fieldName string, t astparser.Type
 	fileContent.WriteString("}))\n\n")
 }
 
-func writePointerDef(fileContent *bytes.Buffer, fieldName, keyName string, method encMethod, t astparser.TypePointer) {
+func writePointerDef(fileContent *bytes.Buffer, fieldName, keyName string, method encMethod, t astparser.TypePointer, secured bool) {
+	if secured {
+		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+		return
+	}
+
 	switch method {
 	case encMethodAdd:
 		fileContent.WriteString(fmt.Sprintf("if %s != nil {\n", fieldName))
@@ -164,10 +192,10 @@ func writePointerDef(fileContent *bytes.Buffer, fieldName, keyName string, metho
 
 	switch ttt := t.InnerType.(type) {
 	case astparser.TypeSimple:
-		writeSimpleDef(fileContent, ttt, method, "*"+fieldName, keyName)
+		writeSimpleDef(fileContent, ttt, method, "*"+fieldName, keyName, secured)
 
 	case astparser.TypeCustom:
-		writeCustomDef(fileContent, method, "*"+fieldName, keyName)
+		writeCustomDef(fileContent, method, "*"+fieldName, keyName, secured)
 	default:
 		panic(fmt.Sprintf("unsupported array pointer innter type %T field name %s", ttt, fieldName))
 	}
@@ -177,7 +205,12 @@ func writePointerDef(fileContent *bytes.Buffer, fieldName, keyName string, metho
 	}
 }
 
-func writeCustomDef(fileContent *bytes.Buffer, method encMethod, fieldName, keyName string) {
+func writeCustomDef(fileContent *bytes.Buffer, method encMethod, fieldName, keyName string, secured bool) {
+	if secured {
+		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+		return
+	}
+
 	switch method {
 	case encMethodAppend:
 		fileContent.WriteString(
@@ -205,7 +238,13 @@ func writeSimpleDef(
 	simpleType astparser.TypeSimple,
 	methodName encMethod,
 	fieldName, keyName string,
+	secured bool,
 ) {
+	if secured {
+		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+		return
+	}
+
 	var zapMethodType string
 	switch simpleType.Name {
 	case "bool",

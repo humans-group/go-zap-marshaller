@@ -84,5 +84,8 @@ func (m *Primitives) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if m.Ptr != nil {
 		enc.AddInt(keyName, *m.Ptr)
 	}
+
+	keyName = "Secured"
+	enc.AddString(keyName, "<secured>")
 	return nil
 }

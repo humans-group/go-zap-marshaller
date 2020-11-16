@@ -1,4 +1,4 @@
-module github.com/humans-net/go-zap-marshaller
+module github.com/humans-group/go-zap-marshaller
 
 go 1.14
 

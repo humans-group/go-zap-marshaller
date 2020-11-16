@@ -54,12 +54,12 @@ func (g *Generator) Generate(sources map[string]astparser.ParsedFile) map[string
 			}
 
 			for _, fieldDef := range structDef.Fields {
-				name := fieldDef.FieldName
+				zapFieldName := fieldDef.FieldName
 				if fieldDef.JsonName != "" {
-					name = fieldDef.JsonName
+					zapFieldName = fieldDef.JsonName
 				}
 
-				writeDef(fileContent, fieldDef.FieldType, name)
+				writeDef(fileContent, fieldDef.FieldType, fieldDef.FieldName, zapFieldName)
 			}
 
 			fileContent.WriteString("return nil\n")
@@ -77,8 +77,8 @@ func (g *Generator) Generate(sources map[string]astparser.ParsedFile) map[string
 	return result
 }
 
-func writeDef(fileContent *bytes.Buffer, fieldType astparser.Type, fieldName string) {
-	fileContent.WriteString(fmt.Sprintf("\nkeyName = \"%s\"\n", fieldName))
+func writeDef(fileContent *bytes.Buffer, fieldType astparser.Type, fieldName, zapFieldName string) {
+	fileContent.WriteString(fmt.Sprintf("\nkeyName = \"%s\"\n", zapFieldName))
 
 	switch t := fieldType.(type) {
 	case astparser.TypeArray:

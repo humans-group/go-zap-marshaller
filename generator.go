@@ -42,12 +42,16 @@ func (g *Generator) Generate(sources map[string]astparser.ParsedFile) map[string
 			`, filePackage))
 
 		for _, structDef := range file.Structs {
-			fileContent.WriteString(fmt.Sprintf(`
-				func (m *%s) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-					var keyName string
+			fileContent.WriteString(fmt.Sprintf(
+				"func (m *%s) MarshalLogObject(enc zapcore.ObjectEncoder) error {\n", structDef.Name))
+
+			if len(structDef.Fields) > 0 {
+				fileContent.WriteString(
+					`var keyName string
 					var vv interface{}
 					_ = vv
-			`, structDef.Name))
+				`)
+			}
 
 			for _, fieldDef := range structDef.Fields {
 				writeDef(fileContent, fieldDef.FieldType, fieldDef.FieldName)

@@ -3,7 +3,7 @@ module github.com/humans-group/go-zap-marshaller
 go 1.14
 
 require (
-	github.com/mkorolyov/astparser v0.0.5
+	github.com/mkorolyov/astparser v0.0.6-0.20201120223701-9bd77739018e
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
 	github.com/stretchr/testify v1.6.1 // indirect

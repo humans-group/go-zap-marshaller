@@ -32,7 +32,8 @@ type Optional struct {
 	Int int
 }
 
-const minorVersionStructV1 = "1"
+// skip for now in the generation
+type OptionalSlice []Optional
 
 type StructV1 struct {
 	Dep      Dep

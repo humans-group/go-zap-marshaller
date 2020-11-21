@@ -54,12 +54,18 @@ func (g *Generator) Generate(sources map[string]astparser.ParsedFile) map[string
 			}
 
 			for _, fieldDef := range structDef.Fields {
-				zapFieldName := fieldDef.FieldName
-				if fieldDef.JsonName != "" {
-					zapFieldName = fieldDef.JsonName
+				if !fieldDef.CompositionField {
+					writeFieldDef(fieldDef, fileContent)
+					continue
 				}
 
-				writeDef(fileContent, fieldDef, zapFieldName)
+				switch v := fieldDef.FieldType.(type) {
+				case astparser.TypeCustom:
+					fieldDef.FieldName = v.Name
+					writeFieldDef(fieldDef, fileContent)
+				default:
+					panic(fmt.Sprintf("unexpected composition for struct %s field %#v", structDef.Name, fieldDef))
+				}
 			}
 
 			fileContent.WriteString("return nil\n")
@@ -75,6 +81,15 @@ func (g *Generator) Generate(sources map[string]astparser.ParsedFile) map[string
 	}
 
 	return result
+}
+
+func writeFieldDef(fieldDef astparser.FieldDef, fileContent *bytes.Buffer) {
+	zapFieldName := fieldDef.FieldName
+	if fieldDef.JsonName != "" {
+		zapFieldName = fieldDef.JsonName
+	}
+
+	writeDef(fileContent, fieldDef, zapFieldName)
 }
 
 func writeDef(fileContent *bytes.Buffer, fieldDef astparser.FieldDef, zapFieldName string) {

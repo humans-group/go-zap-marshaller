@@ -134,6 +134,12 @@ func (m *StructV1) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	var vv interface{}
 	_ = vv
 
+	keyName = "Dep1"
+	vv = m.Dep1
+	if marshaler, ok := vv.(zapcore.ObjectMarshaler); ok {
+		_ = enc.AddObject(keyName, marshaler)
+	}
+
 	keyName = "Dep"
 	vv = m.Dep
 	if marshaler, ok := vv.(zapcore.ObjectMarshaler); ok {

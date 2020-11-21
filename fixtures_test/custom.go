@@ -36,6 +36,7 @@ type Optional struct {
 type OptionalSlice []Optional
 
 type StructV1 struct {
+	Dep1
 	Dep      Dep
 	Optional *Optional
 }

@@ -62,6 +62,25 @@ func (m *Primitives) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		return nil
 	}))
 
+	keyName = "MapInterface"
+	_ = enc.AddObject(keyName, zapcore.ObjectMarshalerFunc(func(enc zapcore.ObjectEncoder) error {
+		for key, value := range m.MapInterface {
+			_ = enc.AddReflected(key, value)
+		}
+		return nil
+	}))
+
+	keyName = "InterfaceSlice"
+	_ = enc.AddArray(keyName, zapcore.ArrayMarshalerFunc(func(aenc zapcore.ArrayEncoder) error {
+		for _, value := range m.InterfaceSlice {
+			_ = aenc.AppendReflected(value)
+		}
+		return nil
+	}))
+
+	keyName = "Interface"
+	_ = enc.AddReflected(keyName, m.Interface)
+
 	keyName = "Slice"
 	_ = enc.AddArray(keyName, zapcore.ArrayMarshalerFunc(func(aenc zapcore.ArrayEncoder) error {
 		for _, value := range m.Slice {

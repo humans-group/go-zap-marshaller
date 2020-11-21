@@ -83,6 +83,8 @@ func writeDef(fileContent *bytes.Buffer, fieldDef astparser.FieldDef, zapFieldNa
 	secured := secured(fieldDef.AllTags)
 
 	switch t := fieldDef.FieldType.(type) {
+	case astparser.TypeInterfaceValue:
+		writeInterfaceDef(fileContent, encMethodAdd, fmt.Sprintf("m.%s", fieldDef.FieldName), "keyName", secured)
 	case astparser.TypeArray:
 		writeArrayDef(fileContent, fieldDef.FieldName, t, secured)
 	case astparser.TypeMap:
@@ -121,6 +123,8 @@ func writeMapDef(fileContent *bytes.Buffer, fieldName string, t astparser.TypeMa
 	`, fieldName))
 
 	switch tt := t.ValueType.(type) {
+	case astparser.TypeInterfaceValue:
+		writeInterfaceDef(fileContent, encMethodAdd, "value", "key", secured)
 	case astparser.TypeCustom:
 		writeCustomDef(fileContent, encMethodAdd, "value", "key", secured)
 	case astparser.TypePointer:
@@ -155,6 +159,8 @@ func writeArrayDef(fileContent *bytes.Buffer, fieldName string, t astparser.Type
 	`, fieldName))
 
 	switch tt := t.InnerType.(type) {
+	case astparser.TypeInterfaceValue:
+		writeInterfaceDef(fileContent, encMethodAppend, "value", "keyName", secured)
 	case astparser.TypeCustom:
 		writeCustomDef(fileContent, encMethodAppend, "value", "keyName", secured)
 	case astparser.TypePointer:
@@ -230,6 +236,27 @@ func writeCustomDef(fileContent *bytes.Buffer, method encMethod, fieldName, keyN
 
 	default:
 		panic(fmt.Sprintf("unexpected enc method %s", method))
+	}
+}
+
+func writeInterfaceDef(
+	fileContent *bytes.Buffer,
+	methodName encMethod,
+	fieldName, keyName string,
+	secured bool,
+) {
+	if secured {
+		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+		return
+	}
+
+	switch methodName {
+	case encMethodAdd:
+		fileContent.WriteString(fmt.Sprintf("_ = enc.AddReflected(%s, %s)\n", keyName, fieldName))
+	case encMethodAppend:
+		fileContent.WriteString(fmt.Sprintf("_ = aenc.AppendReflected(%s)\n", fieldName))
+	default:
+		panic(fmt.Sprintf("unknown method name %s", methodName))
 	}
 }
 

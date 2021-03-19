@@ -25,6 +25,7 @@ type Dep struct {
 	Dep2Opt    *Dep2
 	Dep3Array  []Dep3
 	Dep4Map    map[string]Dep4
+	Dep4MapPtr map[string]*Dep4
 	DepWithDep Dep6
 }
 

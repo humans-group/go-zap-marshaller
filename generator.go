@@ -216,7 +216,7 @@ func writePointerDef(fileContent *bytes.Buffer, fieldName, keyName string, metho
 		writeSimpleDef(fileContent, ttt, method, "*"+fieldName, keyName, secured)
 
 	case astparser.TypeCustom:
-		writeCustomDef(fileContent, method, "*"+fieldName, keyName, secured)
+		writeCustomDef(fileContent, method, fieldName, keyName, secured)
 	default:
 		panic(fmt.Sprintf("unsupported array pointer innter type %T field name %s", ttt, fieldName))
 	}

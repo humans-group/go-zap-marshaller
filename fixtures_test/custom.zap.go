@@ -83,7 +83,7 @@ func (m *Dep) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 	keyName = "Dep2Opt"
 	if m.Dep2Opt != nil {
-		vv = *m.Dep2Opt
+		vv = m.Dep2Opt
 		if marshaler, ok := vv.(zapcore.ObjectMarshaler); ok {
 			_ = enc.AddObject(keyName, marshaler)
 		}
@@ -106,6 +106,19 @@ func (m *Dep) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 			vv = value
 			if marshaler, ok := vv.(zapcore.ObjectMarshaler); ok {
 				_ = enc.AddObject(key, marshaler)
+			}
+		}
+		return nil
+	}))
+
+	keyName = "Dep4MapPtr"
+	_ = enc.AddObject(keyName, zapcore.ObjectMarshalerFunc(func(enc zapcore.ObjectEncoder) error {
+		for key, value := range m.Dep4MapPtr {
+			if value != nil {
+				vv = value
+				if marshaler, ok := vv.(zapcore.ObjectMarshaler); ok {
+					_ = enc.AddObject(key, marshaler)
+				}
 			}
 		}
 		return nil
@@ -148,7 +161,7 @@ func (m *StructV1) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 
 	keyName = "Optional"
 	if m.Optional != nil {
-		vv = *m.Optional
+		vv = m.Optional
 		if marshaler, ok := vv.(zapcore.ObjectMarshaler); ok {
 			_ = enc.AddObject(keyName, marshaler)
 		}

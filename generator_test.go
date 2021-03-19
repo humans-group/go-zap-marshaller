@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestHttpClient(t *testing.T) {
+func TestGenerator(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("zap_generator.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "ZapGenerator", []Reporter{junitReporter})

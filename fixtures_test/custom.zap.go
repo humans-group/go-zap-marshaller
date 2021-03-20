@@ -10,7 +10,7 @@ func (m *Dep1) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	_ = vv
 
 	keyName = "Str"
-	enc.AddString(keyName, m.Str)
+	enc.AddString(keyName, string(m.Str))
 	return nil
 }
 
@@ -20,7 +20,7 @@ func (m *Dep2) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	_ = vv
 
 	keyName = "Str"
-	enc.AddString(keyName, m.Str)
+	enc.AddString(keyName, string(m.Str))
 	return nil
 }
 
@@ -30,7 +30,7 @@ func (m *Dep3) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	_ = vv
 
 	keyName = "Str"
-	enc.AddString(keyName, m.Str)
+	enc.AddString(keyName, string(m.Str))
 	return nil
 }
 
@@ -40,7 +40,7 @@ func (m *Dep4) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	_ = vv
 
 	keyName = "Str"
-	enc.AddString(keyName, m.Str)
+	enc.AddString(keyName, string(m.Str))
 	return nil
 }
 
@@ -50,7 +50,7 @@ func (m *Dep5) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	_ = vv
 
 	keyName = "Str"
-	enc.AddString(keyName, m.Str)
+	enc.AddString(keyName, string(m.Str))
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (m *Dep) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	_ = vv
 
 	keyName = "Int"
-	enc.AddInt(keyName, m.Int)
+	enc.AddInt(keyName, int(m.Int))
 
 	keyName = "Dep1"
 	vv = m.Dep1
@@ -129,6 +129,29 @@ func (m *Dep) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if marshaler, ok := vv.(zapcore.ObjectMarshaler); ok {
 		_ = enc.AddObject(keyName, marshaler)
 	}
+
+	keyName = "ConstStr"
+	enc.AddString(keyName, string(m.ConstStr))
+
+	keyName = "ConstInt"
+	enc.AddInt(keyName, int(m.ConstInt))
+
+	keyName = "ConstStrArray"
+	_ = enc.AddArray(keyName, zapcore.ArrayMarshalerFunc(func(aenc zapcore.ArrayEncoder) error {
+		for _, value := range m.ConstStrArray {
+			aenc.AppendString(string(value))
+		}
+		return nil
+	}))
+
+	keyName = "ConstStrMap"
+	_ = enc.AddObject(keyName, zapcore.ObjectMarshalerFunc(func(enc zapcore.ObjectEncoder) error {
+		for key, value := range m.ConstStrMap {
+			enc.AddString(key, string(value))
+		}
+		return nil
+	}))
+
 	return nil
 }
 
@@ -138,7 +161,7 @@ func (m *Optional) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	_ = vv
 
 	keyName = "Int"
-	enc.AddInt(keyName, m.Int)
+	enc.AddInt(keyName, int(m.Int))
 	return nil
 }
 

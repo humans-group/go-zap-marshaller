@@ -89,33 +89,61 @@ func writeFieldDef(fieldDef astparser.FieldDef, fileContent *bytes.Buffer) {
 		zapFieldName = fieldDef.JsonName
 	}
 
-	secured := secured(fieldDef.AllTags)
-
-	keyName := "keyName"
-
-	writeDef(fileContent, encMethodAdd, fieldDef.FieldType, fieldDef.FieldName, zapFieldName, keyName, secured, false)
-}
-
-func writeDef(fileContent *bytes.Buffer, method encMethod, fieldType astparser.Type, fieldName, zapFieldName, keyName string, secured, recursive bool) {
-	if !recursive {
-		fileContent.WriteString(fmt.Sprintf("\nkeyName = \"%s\"\n", zapFieldName))
+	fieldGenerator := fieldGenerator{
+		fieldDef:    fieldDef,
+		fileContent: fileContent,
 	}
 
-	switch t := fieldType.(type) {
+	fieldGenerator.writeDef(fieldGenContext{
+		encoderMethod: encMethodAdd,
+		zapFieldName:  zapFieldName,
+		fieldName:     fieldDef.FieldName,
+		keyName:       "keyName",
+		secured:       secured(fieldDef.AllTags),
+		recursiveCall: false,
+		fieldType:     fieldDef.FieldType,
+	})
+}
+
+type fieldGenerator struct {
+	fieldDef    astparser.FieldDef
+	fileContent *bytes.Buffer
+}
+
+type fieldGenContext struct {
+	encoderMethod encMethod
+	zapFieldName  string
+	fieldName     string
+	keyName       string
+	secured       bool
+	recursiveCall bool
+	fieldType     astparser.Type
+}
+
+func (g *fieldGenerator) writeDef(ctx fieldGenContext) {
+	if !ctx.recursiveCall {
+		g.fileContent.WriteString(fmt.Sprintf("\nkeyName = \"%s\"\n", ctx.zapFieldName))
+	}
+
+	switch t := ctx.fieldType.(type) {
 	case astparser.TypeInterfaceValue:
-		writeInterfaceDef(fileContent, method, recursiveFieldName(recursive, fieldName), keyName, secured)
+		ctx.fieldName = recursiveFieldName(ctx.recursiveCall, ctx.fieldName)
+		g.writeInterfaceDef(ctx)
 	case astparser.TypeArray:
-		writeArrayDef(fileContent, fieldName, zapFieldName, t, secured)
+		g.writeArrayDef(ctx)
 	case astparser.TypeMap:
-		writeMapDef(fileContent, fieldName, zapFieldName, t, secured)
+		g.writeMapDef(ctx)
 	case astparser.TypePointer:
-		writePointerDef(fileContent, recursiveFieldName(recursive, fieldName), keyName, zapFieldName, encMethodAdd, t, secured)
+		ctx.fieldName = recursiveFieldName(ctx.recursiveCall, ctx.fieldName)
+		g.writePointerDef(ctx)
 	case astparser.TypeCustom:
-		writeCustomDef(t, fileContent, method, recursiveFieldName(recursive, fieldName), keyName, zapFieldName, secured)
+		ctx.fieldName = recursiveFieldName(ctx.recursiveCall, ctx.fieldName)
+		g.writeCustomDef(ctx)
 	case astparser.TypeSimple:
-		writeSimpleDef(fileContent, t, method, recursiveFieldName(recursive, fieldName), keyName, secured)
+		ctx.fieldName = recursiveFieldName(ctx.recursiveCall, ctx.fieldName)
+		g.writeSimpleDef(ctx)
 	default:
-		panic(fmt.Sprintf("unknown field name %s type %T", fieldName, t))
+		panic(fmt.Sprintf("unknown field name %s type %T", ctx.fieldName, t))
 	}
 }
 
@@ -138,139 +166,165 @@ func secured(tags map[string]string) bool {
 	return false
 }
 
-func writeMapDef(fileContent *bytes.Buffer, fieldName, zapFieldName string, t astparser.TypeMap, secured bool) {
-	if secured {
-		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+func (g *fieldGenerator) writeMapDef(ctx fieldGenContext) {
+	if ctx.secured {
+		g.fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
 		return
 	}
 
-	fileContent.WriteString(fmt.Sprintf(
+	g.fileContent.WriteString(fmt.Sprintf(
 		`_ = enc.AddObject(keyName, zapcore.ObjectMarshalerFunc(func(enc zapcore.ObjectEncoder) error {
 		for key, value := range m.%s {
-	`, fieldName))
+	`, ctx.fieldName))
+
+	t := ctx.fieldType.(astparser.TypeMap)
 
 	switch tt := t.ValueType.(type) {
 	case astparser.TypeInterfaceValue:
-		writeInterfaceDef(fileContent, encMethodAdd, "value", "key", secured)
+		ctx.fieldName = "value"
+		ctx.keyName = "key"
+		g.writeInterfaceDef(ctx)
 	case astparser.TypeCustom:
-		writeCustomDef(tt, fileContent, encMethodAdd, "value", "key", zapFieldName, secured)
+		ctx.fieldName = "value"
+		ctx.keyName = "key"
+		ctx.fieldType = tt
+		g.writeCustomDef(ctx)
 	case astparser.TypePointer:
-		writePointerDef(fileContent, "value", "key", zapFieldName, encMethodAdd, tt, secured)
+		ctx.fieldName = "value"
+		ctx.keyName = "key"
+		ctx.fieldType = tt
+		g.writePointerDef(ctx)
 
 	case astparser.TypeSimple:
-		writeSimpleDef(fileContent, tt, encMethodAdd, "value", "key", secured)
+		ctx.fieldName = "value"
+		ctx.keyName = "key"
+		ctx.fieldType = tt
+		g.writeSimpleDef(ctx)
 
 	default:
-		panic(fmt.Sprintf("unsupported array inner type %T in field %s", tt, fieldName))
+		panic(fmt.Sprintf("unsupported array inner type %T in field %s", tt, ctx.fieldName))
 	}
 
-	fileContent.WriteString("}\n")
-	fileContent.WriteString("return nil\n")
-	fileContent.WriteString("}))\n\n")
+	g.fileContent.WriteString("}\n")
+	g.fileContent.WriteString("return nil\n")
+	g.fileContent.WriteString("}))\n\n")
 }
 
-func writeArrayDef(fileContent *bytes.Buffer, fieldName, zapFieldName string, t astparser.TypeArray, secured bool) {
-	if secured {
-		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+func (g *fieldGenerator) writeArrayDef(ctx fieldGenContext) {
+	if ctx.secured {
+		g.fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
 		return
 	}
+
+	t := ctx.fieldType.(astparser.TypeArray)
 
 	if s, ok := t.InnerType.(astparser.TypeSimple); ok && s.Name == "byte" {
-		fileContent.WriteString(fmt.Sprintf("enc.AddByteString(keyName, m.%s)\n", fieldName))
+		g.fileContent.WriteString(fmt.Sprintf("enc.AddByteString(keyName, m.%s)\n", ctx.fieldName))
 		return
 	}
 
-	fileContent.WriteString(fmt.Sprintf(
+	g.fileContent.WriteString(fmt.Sprintf(
 		`_ = enc.AddArray(keyName, zapcore.ArrayMarshalerFunc(func(aenc zapcore.ArrayEncoder) error {
 		for _, value := range m.%s {
-	`, fieldName))
+	`, ctx.fieldName))
 
 	switch tt := t.InnerType.(type) {
 	case astparser.TypeInterfaceValue:
-		writeInterfaceDef(fileContent, encMethodAppend, "value", "keyName", secured)
+		ctx.fieldName = "value"
+		ctx.keyName = "keyName"
+		ctx.encoderMethod = encMethodAppend
+		g.writeInterfaceDef(ctx)
 	case astparser.TypeCustom:
-		writeCustomDef(tt, fileContent, encMethodAppend, "value", "keyName", zapFieldName, secured)
+		ctx.fieldName = "value"
+		ctx.keyName = "keyName"
+		ctx.fieldType = tt
+		ctx.encoderMethod = encMethodAppend
+		g.writeCustomDef(ctx)
 	case astparser.TypePointer:
-		writePointerDef(fileContent, "value", "key", zapFieldName, encMethodAppend, tt, secured)
+		ctx.fieldName = "value"
+		ctx.keyName = "key"
+		ctx.fieldType = tt
+		ctx.encoderMethod = encMethodAppend
+		g.writePointerDef(ctx)
 
 	case astparser.TypeSimple:
-		writeSimpleDef(fileContent, tt, encMethodAppend, "value", "keyName", secured)
+		ctx.fieldName = "value"
+		ctx.keyName = "keyName"
+		ctx.fieldType = tt
+		ctx.encoderMethod = encMethodAppend
+		g.writeSimpleDef(ctx)
 
 	default:
-		panic(fmt.Sprintf("unsupported array inner type %T in field %s", tt, fieldName))
+		panic(fmt.Sprintf("unsupported array inner type %T in field %s", tt, ctx.fieldName))
 	}
 
-	fileContent.WriteString("}\n")
-	fileContent.WriteString("return nil\n")
-	fileContent.WriteString("}))\n\n")
+	g.fileContent.WriteString("}\n")
+	g.fileContent.WriteString("return nil\n")
+	g.fileContent.WriteString("}))\n\n")
 }
 
-func writePointerDef(
-	fileContent *bytes.Buffer,
-	fieldName, keyName, zapFieldName string,
-	method encMethod,
-	t astparser.TypePointer,
-	secured bool,
-) {
-	if secured {
-		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+func (g *fieldGenerator) writePointerDef(ctx fieldGenContext) {
+	if ctx.secured {
+		g.fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
 		return
 	}
 
-	switch method {
+	switch ctx.encoderMethod {
 	case encMethodAdd:
-		fileContent.WriteString(fmt.Sprintf("if %s != nil {\n", fieldName))
+		g.fileContent.WriteString(fmt.Sprintf("if %s != nil {\n", ctx.fieldName))
 	case encMethodAppend:
-		fileContent.WriteString(fmt.Sprintf(`if %s == nil {
+		g.fileContent.WriteString(fmt.Sprintf(`if %s == nil {
 				continue
 			}
-		`, fieldName))
+		`, ctx.fieldName))
 	default:
-		panic(fmt.Sprintf("unexpected enc method %s", method))
+		panic(fmt.Sprintf("unexpected enc method %s", ctx.encoderMethod))
 	}
+
+	t := ctx.fieldType.(astparser.TypePointer)
 
 	switch ttt := t.InnerType.(type) {
 	case astparser.TypeSimple:
-		writeSimpleDef(fileContent, ttt, method, "*"+fieldName, keyName, secured)
+		ctx.fieldName = "*" + ctx.fieldName
+		ctx.fieldType = ttt
+		g.writeSimpleDef(ctx)
 
 	case astparser.TypeCustom:
-		writeCustomDef(ttt, fileContent, method, fieldName, keyName, zapFieldName, secured)
+		ctx.fieldType = ttt
+		g.writeCustomDef(ctx)
 	default:
-		panic(fmt.Sprintf("unsupported array pointer innter type %T field name %s", ttt, fieldName))
+		panic(fmt.Sprintf("unsupported array pointer innter type %T field name %s", ttt, ctx.fieldName))
 	}
 
-	if method == encMethodAdd {
-		fileContent.WriteString("}\n")
+	if ctx.encoderMethod == encMethodAdd {
+		g.fileContent.WriteString("}\n")
 	}
 }
 
-func writeCustomDef(
-	t astparser.TypeCustom,
-	fileContent *bytes.Buffer,
-	method encMethod,
-	fieldName, keyName string,
-	zapFieldName string,
-	secured bool,
-) {
-	if secured {
-		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+func (g *fieldGenerator) writeCustomDef(ctx fieldGenContext) {
+	if ctx.secured {
+		g.fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
 		return
 	}
 
+	t := ctx.fieldType.(astparser.TypeCustom)
+
 	// we cant resolve alias type, so lets just stringify it
 	if t.Alias {
-		fileContent.WriteString(fmt.Sprintf("enc.AddString(keyName, %s)\n", fieldName))
+		g.fileContent.WriteString(fmt.Sprintf("enc.AddString(keyName, %s)\n", ctx.fieldName))
 		return
 	}
 
 	if t.AliasType != nil {
-		writeDef(fileContent, method, t.AliasType, fieldName, zapFieldName, keyName, secured, true)
+		ctx.recursiveCall = true
+		ctx.fieldType = t.AliasType
+		g.writeDef(ctx)
 		return
 	}
 
-	switch method {
+	switch ctx.encoderMethod {
 	case encMethodAppend:
-		fileContent.WriteString(
+		g.fileContent.WriteString(
 			`vv = value
 			if marshaler, ok := vv.(zapcore.ObjectMarshaler); ok {
 				_ = aenc.AppendObject(marshaler)
@@ -278,50 +332,41 @@ func writeCustomDef(
 		`)
 
 	case encMethodAdd:
-		fileContent.WriteString(fmt.Sprintf(
+		g.fileContent.WriteString(fmt.Sprintf(
 			`vv = %s
 			if marshaler, ok := vv.(zapcore.ObjectMarshaler); ok {
 				_ = enc.AddObject(%s, marshaler)
 			}
-		`, fieldName, keyName))
+		`, ctx.fieldName, ctx.keyName))
 
 	default:
-		panic(fmt.Sprintf("unexpected enc method %s", method))
+		panic(fmt.Sprintf("unexpected enc method %s", ctx.encoderMethod))
 	}
 }
 
-func writeInterfaceDef(
-	fileContent *bytes.Buffer,
-	methodName encMethod,
-	fieldName, keyName string,
-	secured bool,
-) {
-	if secured {
-		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+func (g *fieldGenerator) writeInterfaceDef(ctx fieldGenContext) {
+	if ctx.secured {
+		g.fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
 		return
 	}
 
-	switch methodName {
+	switch ctx.encoderMethod {
 	case encMethodAdd:
-		fileContent.WriteString(fmt.Sprintf("_ = enc.AddReflected(%s, %s)\n", keyName, fieldName))
+		g.fileContent.WriteString(fmt.Sprintf("_ = enc.AddReflected(%s, %s)\n", ctx.keyName, ctx.fieldName))
 	case encMethodAppend:
-		fileContent.WriteString(fmt.Sprintf("_ = aenc.AppendReflected(%s)\n", fieldName))
+		g.fileContent.WriteString(fmt.Sprintf("_ = aenc.AppendReflected(%s)\n", ctx.fieldName))
 	default:
-		panic(fmt.Sprintf("unknown method name %s", methodName))
+		panic(fmt.Sprintf("unknown method name %s", ctx.encoderMethod))
 	}
 }
 
-func writeSimpleDef(
-	fileContent *bytes.Buffer,
-	simpleType astparser.TypeSimple,
-	methodName encMethod,
-	fieldName, keyName string,
-	secured bool,
-) {
-	if secured {
-		fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
+func (g *fieldGenerator) writeSimpleDef(ctx fieldGenContext) {
+	if ctx.secured {
+		g.fileContent.WriteString("enc.AddString(keyName, \"<secured>\")\n")
 		return
 	}
+
+	simpleType := ctx.fieldType.(astparser.TypeSimple)
 
 	var zapMethodType string
 	switch simpleType.Name {
@@ -344,15 +389,26 @@ func writeSimpleDef(
 		"uintptr":
 		zapMethodType = strings.ToTitle(simpleType.Name[:1]) + simpleType.Name[1:]
 	default:
-		panic(fmt.Sprintf("unknown simple type %s fieldName %s\n", simpleType.Name, fieldName))
+		panic(fmt.Sprintf("unknown simple type %s fieldName %s\n", simpleType.Name, ctx.fieldName))
 	}
 
-	switch methodName {
+	switch ctx.encoderMethod {
 	case encMethodAdd:
-		fileContent.WriteString(fmt.Sprintf("enc.Add%s(%s, %s(%s))\n", zapMethodType, keyName, simpleType.Name, fieldName))
+		g.fileContent.WriteString(fmt.Sprintf(
+			"enc.Add%s(%s, %s(%s))\n",
+			zapMethodType,
+			ctx.keyName,
+			simpleType.Name,
+			ctx.fieldName,
+		))
 	case encMethodAppend:
-		fileContent.WriteString(fmt.Sprintf("aenc.Append%s(%s(%s))\n", zapMethodType, simpleType.Name, fieldName))
+		g.fileContent.WriteString(fmt.Sprintf(
+			"aenc.Append%s(%s(%s))\n",
+			zapMethodType,
+			simpleType.Name,
+			ctx.fieldName,
+		))
 	default:
-		panic(fmt.Sprintf("unknown method name %s", methodName))
+		panic(fmt.Sprintf("unknown method name %s", ctx.encoderMethod))
 	}
 }

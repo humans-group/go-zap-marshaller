@@ -37,8 +37,8 @@ github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORN
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
-github.com/mkorolyov/astparser v0.0.7 h1:vhIQDvru1hI9XLN8+DSCzHop6gEUlJ3iEqyw9IZWmtU=
-github.com/mkorolyov/astparser v0.0.7/go.mod h1:ksQtHayiiIvv1tpA/0Ft5Gtn+gn0oMOqgTulF8/9KsM=
+github.com/mkorolyov/astparser v0.0.8 h1:fpMuCLApa4bDJBNPtSJqU/GmGodbR3A8pcCdTKt0Gmw=
+github.com/mkorolyov/astparser v0.0.8/go.mod h1:t648ehM234Y8yYnhp8MN8TjGHhYqb93t6OZ/VUHkYAw=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=

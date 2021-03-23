@@ -44,6 +44,8 @@ type Dep struct {
 	ConstStrArray []ConstStr
 	ConstStrMap   map[string]ConstStr
 	ConstStrPtr   *ConstStr
+	Error         error
+	Errors        []error
 }
 
 type Optional struct {

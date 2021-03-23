@@ -130,10 +130,10 @@ func (g *fieldGenerator) writePointerDef(ctx fieldGenContext) {
 
 	switch tt := t.InnerType.(type) {
 	case astparser.TypeSimple:
-		g.writeSimpleDef(ctx.withFieldName("*"+ctx.fieldName))
+		g.writeSimpleDef(ctx.withFieldName("*" + ctx.fieldName))
 	case astparser.TypeCustom:
 		if tt.AliasType != nil {
-			ctx = ctx.withFieldName("*"+ctx.fieldName)
+			ctx = ctx.withFieldName("*" + ctx.fieldName)
 		}
 		g.writeCustomDef(ctx)
 	default:
@@ -147,6 +147,30 @@ func (g *fieldGenerator) writePointerDef(ctx fieldGenContext) {
 
 func (g *fieldGenerator) writeCustomDef(ctx fieldGenContext) {
 	t := ctx.fieldType.(astparser.TypeCustom)
+
+	if t.Name == "error" {
+		switch ctx.encoderMethod {
+		case encMethodAppend:
+			g.write(
+				`if value != nil {
+				aenc.AppendString(value.Error())
+			}`,
+			)
+
+		case encMethodAdd:
+			g.writef(
+				`if %s != nil {
+				enc.AddString(%s, %[1]s.Error())
+			}
+`, ctx.fieldName, ctx.keyName,
+			)
+
+		default:
+			panic(fmt.Sprintf("unexpected enc method %s", ctx.encoderMethod))
+		}
+
+		return
+	}
 
 	// we cant resolve alias type, so lets just stringify it
 	if t.Alias {

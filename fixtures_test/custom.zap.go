@@ -156,6 +156,22 @@ func (m *Dep) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if m.ConstStrPtr != nil {
 		enc.AddString(keyName, string(*m.ConstStrPtr))
 	}
+
+	keyName = "Error"
+	if m.Error != nil {
+		enc.AddString(keyName, m.Error.Error())
+	}
+
+	keyName = "Errors"
+	_ = enc.AddArray(keyName, zapcore.ArrayMarshalerFunc(func(aenc zapcore.ArrayEncoder) error {
+		for _, value := range m.Errors {
+			if value != nil {
+				aenc.AppendString(value.Error())
+			}
+		}
+		return nil
+	}))
+
 	return nil
 }
 

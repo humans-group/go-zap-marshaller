@@ -132,6 +132,9 @@ func (g *fieldGenerator) writePointerDef(ctx fieldGenContext) {
 	case astparser.TypeSimple:
 		g.writeSimpleDef(ctx.withFieldName("*"+ctx.fieldName))
 	case astparser.TypeCustom:
+		if tt.AliasType != nil {
+			ctx = ctx.withFieldName("*"+ctx.fieldName)
+		}
 		g.writeCustomDef(ctx)
 	default:
 		panic(fmt.Sprintf("unsupported array pointer innter type %T field name %s", tt, ctx.fieldName))

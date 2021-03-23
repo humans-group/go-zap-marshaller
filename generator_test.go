@@ -22,7 +22,7 @@ var _ = Describe("backoff", func() {
 	It("should generate golden files", func() {
 		cfg := astparser.Config{
 			InputDir:      "fixtures_test",
-			IncludeRegexp: "primitives.go|custom.go",
+			IncludeRegexp: "custom.go",
 		}
 		sources, err := astparser.Load(cfg)
 		Ω(err).ShouldNot(HaveOccurred())

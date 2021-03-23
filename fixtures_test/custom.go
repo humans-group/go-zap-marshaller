@@ -43,6 +43,7 @@ type Dep struct {
 	ConstInt      ConstInt
 	ConstStrArray []ConstStr
 	ConstStrMap   map[string]ConstStr
+	ConstStrPtr   *ConstStr
 }
 
 type Optional struct {

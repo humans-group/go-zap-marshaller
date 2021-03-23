@@ -152,6 +152,10 @@ func (m *Dep) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 		return nil
 	}))
 
+	keyName = "ConstStrPtr"
+	if m.ConstStrPtr != nil {
+		enc.AddString(keyName, string(*m.ConstStrPtr))
+	}
 	return nil
 }
 
